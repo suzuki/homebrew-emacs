@@ -23,6 +23,12 @@ class Emacs < Formula
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "glib" => :optional
+
+    # inline patch for HEAD
+    patch :p1 do
+      url "https://raw.githubusercontent.com/suzuki/emacs-inline-patch/master/emacs-inline.patch"
+      sha1 "65e8ef2a0a0b26b368b1588f78619f0c5aca4e99"
+    end
   end
 
   devel do
