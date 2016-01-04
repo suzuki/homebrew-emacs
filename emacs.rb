@@ -27,7 +27,7 @@ class Emacs < Formula
     # inline patch for HEAD
     patch :p1 do
       url "https://raw.githubusercontent.com/suzuki/emacs-inline-patch/master/emacs-inline.patch"
-      sha1 "54e1588bf96d775aaae931d4a308f5646436d7cc"
+      sha1 "d2bec769bdee66d1579f0e81f7fa6336a180975c"
     end
   end
 
