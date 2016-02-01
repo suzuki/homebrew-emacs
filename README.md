@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/suzuki/homebrew-emacs.svg?branch=master)](https://travis-ci.org/suzuki/homebrew-emacs)
+
 ## Custom Emacs formula for Homebrew
 
 My custom Emacs formula for [Homebrew](https://github.com/Homebrew/homebrew).
