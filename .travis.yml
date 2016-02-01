@@ -1,0 +1,6 @@
+---
+language: c
+os: osx
+compiler: gcc
+script:
+  - brew install emacs.rb --with-cocoa --srgb --use-git-head --HEAD --verbose
