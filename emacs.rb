@@ -88,6 +88,7 @@ class Emacs < Formula
     args << "--with-rsvg" if build.with? "librsvg"
     args << "--with-imagemagick" if build.with? "imagemagick"
     args << "--without-popmail" if build.with? "mailutils"
+    args << "--with-modules" if build.head?
 
     system "./autogen.sh" if build.head? || build.devel?
 
