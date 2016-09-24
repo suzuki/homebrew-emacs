@@ -1,26 +1,19 @@
 class Emacs < Formula
   desc "GNU Emacs text editor"
   homepage "https://www.gnu.org/software/emacs/"
-  url "http://ftpmirror.gnu.org/emacs/emacs-24.5.tar.xz"
-  mirror "https://ftp.gnu.org/gnu/emacs/emacs-24.5.tar.xz"
-  sha256 "dd47d71dd2a526cf6b47cb49af793ec2e26af69a0951cc40e43ae290eacfc34e"
+  url "https://ftpmirror.gnu.org/emacs/emacs-25.1.tar.xz"
+  mirror "https://ftp.gnu.org/gnu/emacs/emacs-25.1.tar.xz"
+  sha256 "19f2798ee3bc26c95dca3303e7ab141e7ad65d6ea2b6945eeba4dbea7df48f33"
 
   bottle do
-    revision 2
-    sha256 "2442a949678d9b3cbe99e9b504917a641de57258d2a40dc85e8a70efae82bb38" => :el_capitan
-    sha256 "751b8b481b30870273243eae77ea08eb2b0b5a2fbcbc62453b7cf7632ac69445" => :yosemite
-    sha256 "3889a7cbda704f604b3a6187c8683ea1e6e4e600e1e7a0b8b59f33533e8f3023" => :mavericks
-  end
-
-  devel do
-    url "http://alpha.gnu.org/gnu/emacs/pretest/emacs-25.0.92.tar.xz"
-    sha256 "c29733959ae2c6a7c1d5f9465b4d06c93977cc1f3905313d992051a16590568e"
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    sha256 "6022295cbbad123db684cef19029d6100e711e29c160ac9ba1bb7a38304655da" => :sierra
+    sha256 "013398eb1c8030b31423484bc0c316245cbab523c70452f200814950c98b1f44" => :el_capitan
+    sha256 "fa3f4f8f6050072e2032c7dc04d3289ec82847bb2ea507c1444bbc385f375eda" => :yosemite
   end
 
   head do
     url "https://github.com/emacs-mirror/emacs.git"
+
     depends_on "autoconf" => :build
     depends_on "automake" => :build
   end
@@ -28,38 +21,28 @@ class Emacs < Formula
   option "with-cocoa", "Build a Cocoa version of emacs"
   option "with-ctags", "Don't remove the ctags executable that emacs provides"
   option "without-libxml2", "Don't build with libxml2 support"
+  option "with-modules", "Compile with dynamic modules support"
 
   deprecated_option "cocoa" => "with-cocoa"
   deprecated_option "keep-ctags" => "with-ctags"
-  deprecated_option "with-x" => "with-x11"
+  deprecated_option "with-d-bus" => "with-dbus"
 
   depends_on "pkg-config" => :build
-  depends_on :x11 => :optional
-  depends_on "d-bus" => :optional
+  depends_on "dbus" => :optional
   depends_on "gnutls" => :optional
-  depends_on "librsvg" => :optional
+  depends_on "librsvg" => :recommended
   depends_on "imagemagick" => :optional
   depends_on "mailutils" => :optional
-  depends_on "glib" => :optional
-
-  # https://github.com/Homebrew/homebrew/issues/37803
-  if build.with? "x11"
-    depends_on "freetype" => :recommended
-    depends_on "fontconfig" => :recommended
-  end
-
-  fails_with :llvm do
-    build 2334
-    cause "Duplicate symbol errors while linking."
-  end
 
   def install
-    args = ["--prefix=#{prefix}",
-            "--enable-locallisppath=#{HOMEBREW_PREFIX}/share/emacs/site-lisp",
-            "--infodir=#{info}/emacs",
-           ]
-
-    args << "--with-file-notification=gfile" if build.with? "glib"
+    args = %W[
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --enable-locallisppath=#{HOMEBREW_PREFIX}/share/emacs/site-lisp
+      --infodir=#{info}/emacs
+      --prefix=#{prefix}
+      --without-x
+    ]
 
     if build.with? "libxml2"
       args << "--with-xml2"
@@ -67,7 +50,7 @@ class Emacs < Formula
       args << "--without-xml2"
     end
 
-    if build.with? "d-bus"
+    if build.with? "dbus"
       args << "--with-dbus"
     else
       args << "--without-dbus"
@@ -79,25 +62,24 @@ class Emacs < Formula
       args << "--without-gnutls"
     end
 
-    args << "--with-rsvg" if build.with? "librsvg"
     args << "--with-imagemagick" if build.with? "imagemagick"
-    args << "--without-popmail" if build.with? "mailutils"
+    args << "--with-modules" if build.with? "modules"
+    args << "--with-rsvg" if build.with? "librsvg"
+    args << "--without-pop" if build.with? "mailutils"
 
     system "./autogen.sh" if build.head? || build.devel?
 
     if build.with? "cocoa"
       args << "--with-ns" << "--disable-ns-self-contained"
-      system "./configure", *args
-      system "make"
-      system "make", "install"
+    else
+      args << "--without-ns"
+    end
 
-      # Remove when 25.1 is released
-      if build.stable?
-        chmod 0644, %w[nextstep/Emacs.app/Contents/PkgInfo
-                       nextstep/Emacs.app/Contents/Resources/Credits.html
-                       nextstep/Emacs.app/Contents/Resources/document.icns
-                       nextstep/Emacs.app/Contents/Resources/Emacs.icns]
-      end
+    system "./configure", *args
+    system "make"
+    system "make", "install"
+
+    if build.with? "cocoa"
       prefix.install "nextstep/Emacs.app"
 
       # Replace the symlink with one that avoids starting Cocoa.
@@ -106,22 +88,6 @@ class Emacs < Formula
         #!/bin/bash
         exec #{prefix}/Emacs.app/Contents/MacOS/Emacs "$@"
       EOS
-    else
-      if build.with? "x11"
-        # These libs are not specified in xft's .pc. See:
-        # https://trac.macports.org/browser/trunk/dports/editors/emacs/Portfile#L74
-        # https://github.com/Homebrew/homebrew/issues/8156
-        ENV.append "LDFLAGS", "-lfreetype -lfontconfig"
-        args << "--with-x"
-        args << "--with-gif=no" << "--with-tiff=no" << "--with-jpeg=no"
-      else
-        args << "--without-x"
-      end
-      args << "--without-ns"
-
-      system "./configure", *args
-      system "make"
-      system "make", "install"
     end
 
     # Follow MacPorts and don't install ctags from Emacs. This allows Vim
@@ -134,11 +100,13 @@ class Emacs < Formula
 
   def caveats
     if build.with? "cocoa" then <<-EOS.undent
-      A command line wrapper for the cocoa app was installed to:
-        #{bin}/emacs
+      Please try the Cask for a better-supported Cocoa version:
+        brew cask install emacs
       EOS
     end
   end
+
+  plist_options manual: "emacs"
 
   def plist; <<-EOS.undent
     <?xml version="1.0" encoding="UTF-8"?>
