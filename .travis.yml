@@ -9,5 +9,5 @@ matrix:
 before_script:
   - rvm get head || true
 script:
-  - brew update >/dev/null
-  - brew install emacs.rb --with-cocoa --HEAD --verbose || true
+  - brew update || true
+  - brew install emacs.rb --with-cocoa --HEAD --verbose
