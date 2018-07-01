@@ -1,20 +1,15 @@
 class Emacs < Formula
   desc "GNU Emacs text editor"
   homepage "https://www.gnu.org/software/emacs/"
-  url "https://ftpmirror.gnu.org/emacs/emacs-25.1.tar.xz"
-  mirror "https://ftp.gnu.org/gnu/emacs/emacs-25.1.tar.xz"
-  sha256 "19f2798ee3bc26c95dca3303e7ab141e7ad65d6ea2b6945eeba4dbea7df48f33"
+  url "https://ftp.gnu.org/gnu/emacs/emacs-26.1.tar.xz"
+  mirror "https://ftpmirror.gnu.org/emacs/emacs-26.1.tar.xz"
+  sha256 "1cf4fc240cd77c25309d15e18593789c8dbfba5c2b44d8f77c886542300fd32c"
+  revision 1
 
   bottle do
-    rebuild 4
-    sha256 "c80ef281b85fb8a8bd65a84676056ea41d7bb2954d5c82193eef2acea2ade856" => :sierra
-    sha256 "5498bd9f8e027d8a77a8939d3468123313a57e67c3f08ad4d4f72bd1a95b3cbb" => :el_capitan
-    sha256 "8fa2c1f493b9dc831a017055b5de26b426925895c6400b24a3755e4db8b0ffa2" => :yosemite
-  end
-
-  devel do
-    url "https://alpha.gnu.org/gnu/emacs/pretest/emacs-25.2-rc2.tar.xz"
-    sha256 "4f405314b427f9fdfc3fe89c3a062524156b23e07396427bb16d30ba1a8bf687"
+    sha256 "f7cb2b2b9b7e519186657ac86929b0e07ab885781f3c0d5e281a4df9beb61b3a" => :high_sierra
+    sha256 "3e517198c33af574942a5d7beb031791825aedc029f98a2dd0ec5d24ba9f7121" => :sierra
+    sha256 "490eb74c1f94db84d77311eb9d3aa6c0c9085e9f971a48e31386488a92799514" => :el_capitan
   end
 
   head do
@@ -23,11 +18,10 @@ class Emacs < Formula
     # inline patch for HEAD
     patch do
       url "https://raw.githubusercontent.com/suzuki/emacs-inline-patch/master/emacs-inline.patch"
-      sha256 "6ba917dfd187484e01c5d2b8350a3a69f0e71cb37f5c69827b17b688331e5870"
+      sha256 "0a0cfc04f511657d50734b1056c466572a0ae5d8ffd55b2956dbbf0e2e19a6ac"
     end
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
     depends_on "gnu-sed" => :build
     depends_on "texinfo" => :build
   end
@@ -43,8 +37,8 @@ class Emacs < Formula
   deprecated_option "imagemagick" => "imagemagick@6"
 
   depends_on "pkg-config" => :build
+  depends_on "gnutls"
   depends_on "dbus" => :optional
-  depends_on "gnutls" => :optional
   depends_on "librsvg" => :optional
   # Emacs does not support ImageMagick 7:
   # Reported on 2017-03-04: https://debbugs.gnu.org/cgi/bugreport.cgi?bug=25967
@@ -58,6 +52,7 @@ class Emacs < Formula
       --enable-locallisppath=#{HOMEBREW_PREFIX}/share/emacs/site-lisp
       --infodir=#{info}/emacs
       --prefix=#{prefix}
+      --with-gnutls
       --without-x
     ]
 
@@ -71,12 +66,6 @@ class Emacs < Formula
       args << "--with-dbus"
     else
       args << "--without-dbus"
-    end
-
-    if build.with? "gnutls"
-      args << "--with-gnutls"
-    else
-      args << "--without-gnutls"
     end
 
     # Note that if ./configure is passed --with-imagemagick but can't find the
@@ -112,7 +101,7 @@ class Emacs < Formula
 
       # Replace the symlink with one that avoids starting Cocoa.
       (bin/"emacs").unlink # Kill the existing symlink
-      (bin/"emacs").write <<-EOS.undent
+      (bin/"emacs").write <<~EOS
         #!/bin/bash
         exec #{prefix}/Emacs.app/Contents/MacOS/Emacs "$@"
       EOS
@@ -127,32 +116,34 @@ class Emacs < Formula
   end
 
   def caveats
-    if build.with? "cocoa" then <<-EOS.undent
+    if build.with? "cocoa" then <<~EOS
       Please try the Cask for a better-supported Cocoa version:
         brew cask install emacs
-      EOS
+    EOS
     end
   end
 
   plist_options :manual => "emacs"
 
-  def plist; <<-EOS.undent
+  def plist; <<~EOS
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
     <plist version="1.0">
     <dict>
+      <key>KeepAlive</key>
+      <true/>
       <key>Label</key>
       <string>#{plist_name}</string>
       <key>ProgramArguments</key>
       <array>
         <string>#{opt_bin}/emacs</string>
-        <string>--daemon</string>
+        <string>--fg-daemon</string>
       </array>
       <key>RunAtLoad</key>
       <true/>
     </dict>
     </plist>
-    EOS
+  EOS
   end
 
   test do
